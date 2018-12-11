@@ -19,9 +19,9 @@ def parse_train(train, train_id):
 
     return {
         'trip_number': train_id,
-        'position': (train['lat'], train['lng']),
-        'moving': train['speed'] > 0,
-        'direction': train['direction'],
+        'position': (train.get('lat', None), train.get('lng', None)),
+        'moving': train.get('speed', 0) > 0,
+        'direction': train.get('direction', None),
         'to': stations[-1],
         'via': stations[:-1]
     }
