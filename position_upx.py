@@ -31,30 +31,38 @@ def add_position(trip, now, now_str, all_shapes):
 
     shape = all_shapes[trip['shape_id']]
 
-    # TODO: resolve holding at stations:
+    # handle holding at stations:
     # the train might depart Weston at 12:08, arrive Bloor 12:12,
     # depart Bloor 12:14, arrive Union 12:22. At 12:13 it is _after_
     # departure from Weston, but also _after_ arrival at Bloor.
-    station_before_now = [
+    at_station = [
         stop for stop in trip['stops']
-        if stop['departure_time'] <= now_str
-    ][-1]
-    station_after_now = [
-        stop for stop in trip['stops']
-        if stop['arrival_time'] >= now_str
-    ][0]
+        if stop['arrival_time'] <= now_str <= stop['departure_time']
+    ]
 
-    # parse times, see how far we are between stations
-    time_departed = parse_gtfs_time(station_before_now['departure_time'])
-    time_arriving = parse_gtfs_time(station_after_now['arrival_time'])
-    leg_duration = time_arriving - time_departed
-    leg_percent = (now - time_departed).total_seconds() / leg_duration.total_seconds()
-    est_dist_traveled = float(station_before_now['shape_dist_traveled']) + (
-        (float(station_after_now['shape_dist_traveled'])
-         - float(station_before_now['shape_dist_traveled']))
-        * leg_percent)
+    if at_station:
+        current_dist_travelled = float(at_station[0]['shape_dist_traveled'])
+    else:
+        # estimate where we are between stations, assuming linear speed between them
 
-    current_dist_travelled = est_dist_traveled
+        station_before_now = [
+            stop for stop in trip['stops']
+            if stop['departure_time'] <= now_str
+        ][-1]
+        station_after_now = [
+            stop for stop in trip['stops']
+            if stop['arrival_time'] >= now_str
+        ][0]
+
+        # parse times, see how far we are between stations
+        time_departed = parse_gtfs_time(station_before_now['departure_time'])
+        time_arriving = parse_gtfs_time(station_after_now['arrival_time'])
+        leg_duration = time_arriving - time_departed
+        leg_percent = (now - time_departed).total_seconds() / leg_duration.total_seconds()
+        current_dist_travelled = float(station_before_now['shape_dist_traveled']) + (
+            (float(station_after_now['shape_dist_traveled'])
+             - float(station_before_now['shape_dist_traveled']))
+            * leg_percent)
 
     position_before_now = [
         point for point in shape
