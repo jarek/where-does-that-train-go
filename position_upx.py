@@ -1,7 +1,8 @@
-from collections import defaultdict
 import csv
 from datetime import datetime
+from itertools import groupby
 import math
+from operator import itemgetter
 from pprint import pprint
 
 
@@ -16,7 +17,7 @@ def parse_gtfs_time(gtfs_time):
     hours, minutes, seconds = gtfs_time.split(':')
 
     if int(hours) > 23:
-        hours = hours - 24
+        hours = int(hours) - 24
 
     today = datetime.today()
     # TODO: tzinfo?
@@ -89,30 +90,25 @@ def add_position(trip, now, now_str, all_shapes):
 def get_current_train_positions():
     # load from GTFS
     # first, shapes
-    all_shapes = defaultdict(list)
     with open('shapes.txt', encoding='utf-8-sig') as f:
-        shapes_reader = csv.DictReader(f)
-
-        for shape_point in shapes_reader:
-            all_shapes[shape_point['shape_id']].append(shape_point)
+        all_shapes = {
+            shape_id: list(points)
+            for shape_id, points in groupby(csv.DictReader(f),
+                                            itemgetter('shape_id'))
+        }
 
     # then trips, including their stop_times
     # in this particular case the GTFS files only include one route and it's the UPX
 
     # first, load the stop_times for the trips
-    all_stop_times = defaultdict(list)
     with open('stop_times.txt', encoding='utf-8-sig') as f:
-        stop_times = csv.DictReader(f)
-
-        for stop_time in stop_times:
-            all_stop_times[stop_time['trip_id']].append(stop_time)
-
-    # oddity: stop_times per trip in UPX GTFS are specified in reverse order,
-    # so we have to sort by stop_sequence
-    all_stop_times = {
-        trip_id: sorted(stop_times, key=lambda s: s['stop_sequence'])
-        for trip_id, stop_times in all_stop_times.items()
-    }
+        all_stop_times = {
+            # oddity: stop_times per trip in UPX GTFS are specified in reverse order,
+            # so we have to sort by stop_sequence
+            trip_id: sorted(stop_times, key=itemgetter('stop_sequence'))
+            for trip_id, stop_times in groupby(csv.DictReader(f),
+                                               itemgetter('trip_id'))
+        }
 
     with open('trips.txt', encoding='utf-8-sig') as f:
         trips_reader = csv.DictReader(f)
@@ -160,6 +156,6 @@ if __name__ == '__main__':
         for train in trains
     ]
 
-    sorted_trains = sorted(trains, key=lambda t: t['distance'])
+    sorted_trains = sorted(trains, key=itemgetter('distance'))
 
     pprint(sorted_trains[:5])
