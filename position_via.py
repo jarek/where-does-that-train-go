@@ -18,6 +18,7 @@ def parse_train(train, train_id):
     stations = [t['station'] for t in train['times']]
 
     return {
+        'line': train_id,
         'trip_number': train_id,
         'position': (train.get('lat', None), train.get('lng', None)),
         'moving': train.get('speed', 0) > 0,

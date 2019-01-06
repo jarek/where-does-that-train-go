@@ -25,7 +25,8 @@
       }
 
       function init() {
-         var map = new L.Map('map').setView([43.65, -79.4], 13);
+         var map = new L.Map('map').setView([43.65, -79.35], 13);
+         var trains = null;
          var tiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v9/tiles/256/{z}/{x}/{y}?access_token={token}', {
                      maxZoom: 19,
                      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OSM contributors</a>, ' +
@@ -34,17 +35,6 @@
          }).addTo(map);
 
          map.attributionControl.setPrefix(''); // Don't show the 'Powered by Leaflet' text.
-         var kmlready = function() {
-             //map.fitBounds(this.getBounds());
-             this.eachLayer(function(layer) {
-                 layer.bindPopup(layer.feature.properties.line + " - " +
-                    layer.feature.properties.trip_number + "<br>" +
-                     "from " + (layer.feature.properties.from || "<unknown>") + "<br>" +
-                     "to " + (layer.feature.properties.to || "<unknown>") + "<br>" +
-                     "via " + (layer.feature.properties.via || "<unknown>"));
-                     console.log(Object.keys(layer.feature.properties));
-             });
-         }
 
          // plain blue icon from Mapbox's Maki, CC0 public domain
          var blueIcon = L.icon({
@@ -54,19 +44,31 @@
              popupAnchor: [0,-30]
          });
 
-         var loadgeojson = function(url) {
-             xhr(url, function(res) {
-             var layer = L.geoJSON(JSON.parse(res.responseText), {
+         var loadTrains = function() {
+             xhr('/trains.geojson', function(res) {
+                var oldTrains = trains;
+                trains = L.geoJSON(JSON.parse(res.responseText), {
                         pointToLayer: function(feature, latlng) {
                             return L.marker(latlng, {icon: blueIcon});
+                        },
+                        onEachFeature: function (feature, layer) {
+                            layer.bindPopup(feature.properties.line + " - " +
+                                feature.properties.trip_number + "<br>" +
+                                "from " + (feature.properties.from || "<unknown>") + "<br>" +
+                                "to " + (feature.properties.to || "<unknown>") + "<br>" +
+                                "via " + (feature.properties.via || "<unknown>")
+                            );
                         }
                      });
-                layer.on('add', kmlready);
-                layer.addTo(map);
-                });
+                trains.addTo(map);
+                if (oldTrains) {
+                    oldTrains.remove();
+                }
+             });
          }
 
-         loadgeojson('/trains.geojson');
+         loadTrains();
+         setInterval(loadTrains, 15000);
        }
    </script>
 </head>
