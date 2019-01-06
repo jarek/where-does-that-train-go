@@ -34,8 +34,6 @@ def parse_trains():
     departed_trains = {train_id: train for train_id, train in all_trains.items()
                        if train['departed']}
 
-    pprint(departed_trains)
-
     trains_with_numbers = [
         parse_train(train, train_id)
         for train_id, train in departed_trains.items()
@@ -45,7 +43,7 @@ def parse_trains():
     #   "lat":null,"lng":null,"speed":0,"direction":null,"departed":true
     trains_with_positions = [
         train for train in trains_with_numbers
-        if train['position'][0] != None
+        if train['position'][0] is not None
     ]
 
     return trains_with_positions

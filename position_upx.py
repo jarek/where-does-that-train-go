@@ -87,6 +87,12 @@ def add_position(trip, now, now_str, all_shapes):
     return trip
 
 
+def add_via(trip):
+    trip['via'] = [stop['stop_id'] for stop in trip['stops']]
+
+    return trip
+
+
 def get_current_train_positions():
     # load from GTFS
     # first, shapes
@@ -143,7 +149,9 @@ def get_current_train_positions():
     trips_with_positions = [add_position(trip, now, now_str, all_shapes)
                             for trip in current_trips]
 
-    return trips_with_positions
+    trips_with_via = [add_via(trip) for trip in trips_with_positions]
+
+    return trips_with_via
 
 
 if __name__ == '__main__':

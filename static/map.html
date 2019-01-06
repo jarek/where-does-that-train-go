@@ -1,0 +1,76 @@
+<html>
+
+<head>
+   <title>Trains in Toronto</title>
+
+   <link rel="stylesheet"
+   href="leaflet.css"
+   integrity="sha384-odo87pn1N9OSsaqUCAOYH8ICyVxDZ4wtbGpSYO1oyg6LxyOjDuTeXTrVLuxUtFzv"
+   crossorigin=""/>
+
+   <script src="/static/leaflet.js"></script>
+
+   <script language="javascript">
+      function xhr(url, onloadfn) {
+          var req = new XMLHttpRequest();
+          req.open('GET', url);
+          req.setRequestHeader('Content-Type', 'application/json');
+          req.onload = function() {
+                  if (req.status === 200) {
+                      onloadfn(req);
+                  }
+          };
+          req.onerror = function() { alert('error!') };
+          req.send();
+      }
+
+      function init() {
+         var map = new L.Map('map').setView([43.65, -79.4], 13);
+         var tiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v9/tiles/256/{z}/{x}/{y}?access_token={token}', {
+                     maxZoom: 19,
+                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OSM contributors</a>, ' +
+                                'imagery &copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>',
+                     token: 'pk.eyJ1IjoianBpb3Jrb3ciLCJhIjoialljamZKWSJ9.LWKo269X7zb5M2OAOaLEPA'
+         }).addTo(map);
+
+         map.attributionControl.setPrefix(''); // Don't show the 'Powered by Leaflet' text.
+         var kmlready = function() {
+             //map.fitBounds(this.getBounds());
+             this.eachLayer(function(layer) {
+                 layer.bindPopup(layer.feature.properties.line + " - " +
+                    layer.feature.properties.trip_number + "<br>" +
+                     "from " + (layer.feature.properties.from || "<unknown>") + "<br>" +
+                     "to " + (layer.feature.properties.to || "<unknown>") + "<br>" +
+                     "via " + (layer.feature.properties.via || "<unknown>"));
+                     console.log(Object.keys(layer.feature.properties));
+             });
+         }
+
+         // plain blue icon from Mapbox's Maki, CC0 public domain
+         var blueIcon = L.icon({
+             iconUrl: '/static/leaflet-maki-pin-m+1976d2.png',
+             iconRetinaUrl: '/static/leaflet-maki-pin-m+1976d2@2x.png',
+             iconSize: [30,70],
+             popupAnchor: [0,-30]
+         });
+
+         var loadgeojson = function(url) {
+             xhr(url, function(res) {
+             var layer = L.geoJSON(JSON.parse(res.responseText), {
+                        pointToLayer: function(feature, latlng) {
+                            return L.marker(latlng, {icon: blueIcon});
+                        }
+                     });
+                layer.on('add', kmlready);
+                layer.addTo(map);
+                });
+         }
+
+         loadgeojson('/trains.geojson');
+       }
+   </script>
+</head>
+<body onLoad="javascript:init();" style="padding:0; margin:0">
+   <div id="map" style="height: 100%; z-index: 10;"></div>
+</body>
+</html>

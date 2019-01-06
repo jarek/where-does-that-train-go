@@ -21,6 +21,8 @@ LINES = {
         'directions_via': {
             'Hamilton GO Centre': ['Port Credit', 'Oakville', 'Aldershot'],
             'Aldershot GO': ['Port Credit', 'Oakville'],
+            'Appleby GO': ['Port Credit', 'Oakville'],
+            'Oakville GO': ['Port Credit'],
             'Union Station': ['Oakville', 'Port Credit']
         }
     },
@@ -53,7 +55,8 @@ LINES = {
     '61': {
         'corridor': 'Richmond Hill',
         'directions_via': {
-            'Gormley GO': ['Oriole', 'Langstaff', 'Richmond Hill']
+            'Gormley GO': ['Oriole', 'Langstaff', 'Richmond Hill'],
+            'Richmond Hill GO': ['Oriole', 'Langstaff']
         }
     }
 }
@@ -103,22 +106,31 @@ def train_with_distance(train, loc):
     return train
 
 
-if __name__ == '__main__':
-    all_trains = [
+def all_trains():
+    trains = [
         train
         for line in LINES.keys()
         for train in parse_line(line)
     ]
+    return trains
+
+
+def print_trains():
+    trains = all_trains()
 
     loc = (43.641, -79.417)
 
     trains_with_distance = [
         train_with_distance(train, loc)
-        for train in all_trains
+        for train in trains
     ]
 
-    sorted_trains = sorted(all_trains,
+    sorted_trains = sorted(trains_with_distance,
                            key=lambda t: t['distance']
                            )
 
     pprint(sorted_trains[:5])
+
+
+if __name__ == '__main__':
+    print_trains()
