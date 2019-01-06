@@ -6,17 +6,6 @@ import position_upx
 import position_via
 
 
-def build_geojson(trains_list):
-    collection = {"type": "FeatureCollection", "features": []}
-
-    for train in trains_list:
-        result = {"type":"Feature", "properties":dict(train),
-                  "geometry":{"type":"Point","coordinates":[train['position'][1], train['position'][0]]}}
-        collection['features'].append(result)
-
-    return collection
-
-
 def collect_trains():
     # get the train positions in parallel
     train_getters = [
@@ -42,6 +31,24 @@ def collect_trains():
                      if -81 < train['position'][1] < -78]
 
     return local_results
+
+
+def build_train_geojson(train):
+    return {
+        "type": "Feature",
+        "properties": train,
+        "geometry": {
+            "type": "Point",
+            "coordinates": [train['position'][1], train['position'][0]]
+        }
+    }
+
+
+def build_geojson(trains_list):
+    return {
+        "type": "FeatureCollection",
+        "features": [build_train_geojson(train) for train in trains_list]
+    }
 
 
 def trains_as_geojson():

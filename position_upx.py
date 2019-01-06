@@ -125,7 +125,8 @@ def get_current_train_positions():
                 'trip_number': trip['trip_id'],
                 'to': trip['trip_headsign'],
                 'shape_id': trip['shape_id'],
-                'stops': all_stop_times[trip['trip_id']]
+                'stops': all_stop_times[trip['trip_id']],
+                'line': 'UP Express'
             }
             for trip in trips_reader
             if trip['service_id'] == '9204'  # TODO: un-hard-code
