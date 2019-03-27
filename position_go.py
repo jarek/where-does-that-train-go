@@ -1,8 +1,13 @@
+from timeit import default_timer
+START_TIME = default_timer()
 import math
 from pprint import pprint
 from xml.etree import ElementTree as ET
 
-import requests
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+#import requests
 
 
 URL = 'http://gotracker.ca/GoTracker/web/GODataAPIProxy.svc/TripLocation/Service/Lang/{line}/en'
@@ -85,8 +90,10 @@ def parse_train(train):
     }
 
 
-def parse_line(line):
-    r = requests.get(URL.format(line=line))
+def parse_line(line, session=None):
+    if not session:
+        session = requests.Session()
+    r = session.get(URL.format(line=line))
     xml = ET.fromstring(r.text)
 
     err_code = xml.attrib['ErrCode']
@@ -106,17 +113,40 @@ def train_with_distance(train, loc):
     return train
 
 
-def all_trains():
-    trains = [
-        train
-        for line in LINES.keys()
-        for train in parse_line(line)
-    ]
+async def async_all_trains():
+    loop = asyncio.get_event_loop()
+
+    trains = []
+
+    workers = len(LINES)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        with requests.Session() as session:
+            tasks = [
+                loop.run_in_executor(executor, parse_line, *(line, session))
+                for line in LINES.keys()
+                ]
+            for response in await asyncio.gather(*tasks):
+                trains.extend(response)
+
+    #trains = [
+    #    train
+    #    for line in LINES.keys()
+    #    for train in parse_line(line)
+    #]
     return trains
+
+
+def all_trains():
+    loop = asyncio.get_event_loop()
+    future_trains = asyncio.ensure_future(async_all_trains())
+    loop.run_until_complete(future_trains)
+
+    return future_trains.result()
 
 
 def print_trains():
     trains = all_trains()
+    print(default_timer() - START_TIME)
 
     loc = (43.641, -79.417)
 
@@ -124,13 +154,18 @@ def print_trains():
         train_with_distance(train, loc)
         for train in trains
     ]
+    print(default_timer() - START_TIME)
 
     sorted_trains = sorted(trains_with_distance,
                            key=lambda t: t['distance']
                            )
+    print(default_timer() - START_TIME)
 
     pprint(sorted_trains[:5])
+    print(default_timer() - START_TIME)
 
 
 if __name__ == '__main__':
+    print(default_timer() - START_TIME)
     print_trains()
+    print(default_timer() - START_TIME)

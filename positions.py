@@ -1,14 +1,40 @@
 from multiprocessing import Pool, TimeoutError
 import sys
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
 import position_go
 import position_upx
 import position_via
 
 
+TRAIN_GETTERS = [
+    position_go.all_trains,
+    position_upx.get_current_train_positions,
+    position_via.parse_trains,
+]
+
+async def async_collect_trains():
+    loop = asyncio.new_event_loop()
+
+    results = []
+
+    workers = len(TRAIN_GETTERS)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        tasks = [
+            loop.run_in_executor(executor, task)
+            for task in TRAIN_GETTERS
+        ]
+        for response in await asyncio.gather(*tasks):
+            results.extend(response)
+
+    return results
+
+
 def collect_trains():
     # get the train positions in parallel
-    train_getters = [
+    """train_getters = [
         position_go.all_trains,
         position_upx.get_current_train_positions,
         position_via.parse_trains,
@@ -24,7 +50,14 @@ def collect_trains():
             except TimeoutError:
                 # log and ignore
                 print("Timed out on " + str(task), file=sys.stderr)
-                pass
+                pass"""
+    loop = asyncio.new_event_loop()
+    future_results = asyncio.ensure_future(async_collect_trains())
+    results = loop.run_until_complete(future_results)
+    print(resultsh)
+
+    results = future_results.result()
+    print(results)
 
     # filter out VIA trains outside GTA
     local_results = [train for train in results
